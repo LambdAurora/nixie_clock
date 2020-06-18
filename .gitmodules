@@ -1,0 +1,6 @@
+[submodule "firmware/cmake"]
+	path = firmware/cmake
+	url = git@github.com:LambdAurora/lcmm.git
+[submodule "firmware/lib/STM32CubeF0"]
+	path = firmware/lib/STM32CubeF0
+	url = git@github.com:STMicroelectronics/STM32CubeF0.git
