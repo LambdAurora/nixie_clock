@@ -1,0 +1,29 @@
+(?) means optional
+(?!) means optional with code tweaks
+
+PA1  -> SDI
+PA2  -> RCLK
+PA3  -> SRCLK
+PA4  ->
+PA5  ->
+PA6  ->
+PA7  ->
+PA8  ->
+PA9  -> UART TX (?)
+PA10 -> UART RX (?)
+PA11 -> USB D-
+PA12 -> USB D+
+PA15 ->
+PB0  ->
+PB1  ->
+PB2  ->
+PB3  ->
+PB4  ->
+PB5  ->
+PB6  -> I2C SCL
+PB7  -> I2C SDA
+PB8  ->
+PB12 ->
+PB13 -> Status LED
+PB14 ->
+PB15 ->

@@ -14,6 +14,16 @@
 #define LED_PIN GPIO_PIN_13
 #define INVERT_STATE(state) (state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET)
 
+#define INIT_OUTPUT_GPIO(PIN, PORT) {\
+    HAL_GPIO_WritePin(PORT, PIN, GPIO_PIN_RESET);\
+    \
+    GPIO_InitStruct.Pin = PIN;\
+    GPIO_InitStruct.Pin = GPIO_MODE_OUTPUT_PP;\
+    GPIO_InitStruct.Pull = GPIO_NOPULL;\
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;\
+    HAL_GPIO_Init(PORT, &GPIO_InitStruct);\
+  }
+
 I2C_HandleTypeDef i2c1h;
 
 /**
@@ -34,6 +44,14 @@ static void setup_gpio() {
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    // Shift register GPIO.
+    INIT_OUTPUT_GPIO(SDI_PIN, SDI_GPIO_PORT)
+    INIT_OUTPUT_GPIO(RCLK_PIN, RCLK_GPIO_PORT)
+    INIT_OUTPUT_GPIO(SRCLK_PIN, SRCLK_GPIO_PORT)
+
+    shift_register_pulse(RCLK_GPIO_PORT, RCLK_PIN);
+    shift_register_pulse(SRCLK_GPIO_PORT, SRCLK_PIN);
 }
 
 void setup_i2c() {

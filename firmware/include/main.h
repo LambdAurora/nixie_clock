@@ -27,4 +27,15 @@
 #define USART1_RX_GPIO_PORT              GPIOA
 #define USART1_RX_AF                     GPIO_AF1_USART1
 
+/* Definition for shift registers */
+// PA1 -> SDI
+#define SDI_PIN         GPIO_PIN_1
+#define SDI_GPIO_PORT   GPIOA
+// PA2 -> RCLK
+#define RCLK_PIN        GPIO_PIN_2
+#define RCLK_GPIO_PORT  GPIOA
+// PA3 -> SRCLK
+#define SRCLK_PIN       GPIO_PIN_3
+#define SRCLK_GPIO_PORT GPIOA
+
 #endif //LAMBDA_NIXIE_CLOCK_MAIN_H

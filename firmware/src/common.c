@@ -28,3 +28,8 @@ void setup_system_clock(void) {
 
     HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0);
 }
+
+void shift_register_pulse(GPIO_TypeDef* gpio, uint8_t pin) {
+    HAL_GPIO_WritePin(gpio, pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(gpio, pin, GPIO_PIN_SET);
+}

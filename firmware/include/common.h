@@ -12,6 +12,9 @@
 
 #ifdef __cplusplus
 extern "C" {
+#include <cinttypes>
+#else
+#include <inttypes.h>
 #endif
 
 #include <stm32f0xx_hal.h>
@@ -20,6 +23,8 @@ extern "C" {
  * Setups the system clock.
  */
 void setup_system_clock(void);
+
+void shift_register_pulse(GPIO_TypeDef* gpio, uint8_t pin);
 
 #ifdef __cplusplus
 }
