@@ -32,4 +32,5 @@ add_otterpill_executable(lambda_nixie_clock ${STM32CubeF0_SOURCES}
         src/rtc.cpp
         src/ee24.cpp
         src/console.cpp
+        src/nixie.cpp
         src/main.cpp)

@@ -10,6 +10,7 @@
 #include <main.h>
 #include <rtc.hpp>
 #include <ee24.hpp>
+#include <nixie.hpp>
 
 #define LED_PIN GPIO_PIN_13
 #define INVERT_STATE(state) (state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET)
@@ -18,9 +19,8 @@
     HAL_GPIO_WritePin(PORT, PIN, GPIO_PIN_RESET);\
     \
     GPIO_InitStruct.Pin = PIN;\
-    GPIO_InitStruct.Pin = GPIO_MODE_OUTPUT_PP;\
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;\
     GPIO_InitStruct.Pull = GPIO_NOPULL;\
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;\
     HAL_GPIO_Init(PORT, &GPIO_InitStruct);\
   }
 
@@ -79,6 +79,9 @@ int main() {
     auto ds3231 = DS3231(i2c1h);
     auto eeprom = EE24(EE24_ADDRESS, i2c1h);
 
+    auto nixies = NixieArray();
+    nixies.from_string("4;2;0;0;0;0;0;0");
+
     ds3231.enable_oscillator();
 
     rtc_t clock;
@@ -95,6 +98,8 @@ int main() {
 
         state = INVERT_STATE(state);
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, state);
+
+        nixies.display(false);
 
         HAL_Delay(500);
     }

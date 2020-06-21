@@ -11,13 +11,29 @@
 #define LAMBDA_NIXIE_CLOCK_COMMON_H
 
 #ifdef __cplusplus
+#  include <string>
+#  include <cinttypes>
+
 extern "C" {
-#include <cinttypes>
 #else
-#include <inttypes.h>
+#  include <inttypes.h>
 #endif
 
 #include <stm32f0xx_hal.h>
+
+// The size of the nixie tube array of the clock.
+// Even numbers are recommended.
+#define NIXIE_COUNT 8
+/* Definition for shift registers */
+// PA1 -> SDI
+#define SDI_PIN         GPIO_PIN_1
+#define SDI_GPIO_PORT   GPIOA
+// PA2 -> RCLK
+#define RCLK_PIN        GPIO_PIN_2
+#define RCLK_GPIO_PORT  GPIOA
+// PA3 -> SRCLK
+#define SRCLK_PIN       GPIO_PIN_3
+#define SRCLK_GPIO_PORT GPIOA
 
 /**
  * Setups the system clock.

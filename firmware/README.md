@@ -13,4 +13,4 @@ Firmware for the Lambda Nixie Clock.
 
 Go into the `build` directory and execute `cmake -DCMAKE_TOOLCHAIN_FILE="../cmake/toolchains/arm_none_eabi_gcc.cmake" ..` then `make`.
 
-To flash it into the OtterPill (or any other STM32F0 based hardware), enter DFU mode and execute `make lambda_nixie_clock.dfu`.
+To flash it into the [OtterPill](https://github.com/Jan--Henrik/OtterPill) (or any other STM32F0 based hardware), enter DFU mode and execute `make lambda_nixie_clock.dfu`.
