@@ -19,6 +19,14 @@ void NixieState::show_number(bool show) {
         this->_number = 0;
 }
 
+void NixieState::on() {
+    this->_show_number = this->_left_comma = this->_right_comma = true;
+}
+
+void NixieState::off() {
+    this->_show_number = this->_left_comma = this->_right_comma = false;
+}
+
 uint8_t NixieState::number() const {
     return this->_number;
 }
@@ -46,6 +54,11 @@ bool NixieState::right_comma() const {
 
 void NixieState::right_comma(bool right_comma) {
     this->_right_comma = right_comma;
+}
+
+void NixieState::clear() {
+    this->off();
+    this->_number = 0;
 }
 
 void NixieState::from_string(const std::string& str) {

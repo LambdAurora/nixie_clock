@@ -9,8 +9,8 @@
 
 #include <main.h>
 #include <rtc.hpp>
-#include <ee24.hpp>
 #include <nixie.hpp>
+#include <config.hpp>
 
 #define LED_PIN GPIO_PIN_13
 #define INVERT_STATE(state) (state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET)
@@ -77,7 +77,11 @@ int main() {
     console::setup();
 
     auto ds3231 = DS3231(i2c1h);
-    auto eeprom = EE24(EE24_ADDRESS, i2c1h);
+    auto configuration = Configuration({EE24_ADDRESS, i2c1h});
+    if (!configuration.init())
+        return 1;
+    // @TODO remove reset
+    configuration.reset();
 
     auto nixies = NixieArray();
     nixies.from_string("4;2;0;0;0;0;0;0");
@@ -85,6 +89,7 @@ int main() {
     ds3231.enable_oscillator();
 
     rtc_t clock;
+    Config config;
 
     ds3231.reset_alarm(ALARM_2);
 
@@ -93,8 +98,10 @@ int main() {
         ds3231.get_time(&clock);
         ds3231.force_temp_conv();
         float temp = ds3231.get_temp();
+        configuration.read(&config);
         console::cout.writef("DS3231 ; lost_power = %d ; temp = %d°C\r\n", ds3231.has_lost_power(), static_cast<int>(temp * 100));
         console::cout.writef("%d:%d:%d %d/%d/%d\r\n", clock.hour, clock.minute, clock.second, clock.day_of_month, clock.month, clock.year);
+        console::cout.writef("H24 %d ; CPC %d\r\n", config.h24, config.cathode_poisoning_cycle);
 
         state = INVERT_STATE(state);
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, state);

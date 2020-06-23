@@ -12,6 +12,7 @@
 
 #include <common.h>
 #include <array>
+#include <functional>
 
 typedef std::array<bool, 6> nixie_state_array;
 
@@ -39,6 +40,16 @@ public:
      * @param show True if the nixie tube should show a number.
      */
     void show_number(bool show);
+
+    /**
+     * Turns on the nixie tube.
+     */
+    void on();
+
+    /**
+     * Turns off the nixie tube.
+     */
+    void off();
 
     /**
      * Returns the number the nixie tube displays.
@@ -76,6 +87,13 @@ public:
      */
     void right_comma(bool right_comma);
 
+    /**
+     * Clears the nixie tube.
+     *
+     * The difference with {@link off()} is this also resets the number.
+     */
+    void clear();
+
     void from_string(const std::string& str);
 
     [[nodiscard]] std::string to_string() const;
@@ -96,16 +114,34 @@ public:
 /**
  * Represents the nixie tube array of size NIXIE_COUNT.
  */
-class NixieArray {
+class NixieArray
+{
 private:
     std::array<NixieState, NIXIE_COUNT> array;
 
 public:
     NixieArray();
 
-    void from_string(const std::string &str);
+    void from_string(const std::string& str);
 
     NixieState& at(size_t i);
+
+    /**
+     * Executes a provided function once for each array element.
+     * @param callback Function to execute on each element.
+     * @return This array.
+     */
+    template<typename _Funct>
+    NixieArray& for_each(_Funct callback) {
+        for (size_t index = 0; index < NIXIE_COUNT; index++) {
+            callback(index, this->array[index]);
+        }
+        return *this;
+    }
+
+    [[nodiscard]] constexpr inline size_t size() const {
+        return NIXIE_COUNT;
+    }
 
     /**
      * Pushes to the shift register all the nixie tube states of this array.
