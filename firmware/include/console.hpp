@@ -42,6 +42,8 @@ namespace console
 
         outstream& operator<<(int i);
 
+        outstream& operator<<(size_t i);
+
         outstream& operator<<(char ch);
     };
 

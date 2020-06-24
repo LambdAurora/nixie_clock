@@ -23,6 +23,25 @@
 #include <cinttypes>
 
 /**
+ * Returns whether the specified year is a leap year.
+ * @param year The year to check.
+ * @return True if the year is a leap year, else false.
+ */
+constexpr bool is_leap_year(uint32_t year);
+
+/**
+ * Returns the days in the specified month of the specified year.
+ * @param month The month.
+ * @param year The year.
+ * @return The number of days in month of the specified year.
+ */
+constexpr uint8_t days_in_month(uint8_t month, uint32_t year);
+
+constexpr uint16_t days_before_month(uint8_t month, uint32_t year);
+
+constexpr uint64_t days_before_year(uint32_t year);
+
+/**
  * Represents the real time clock.
  */
 typedef struct
@@ -33,8 +52,16 @@ typedef struct
     uint8_t day_of_week;
     uint8_t day_of_month;
     uint8_t month;
-    uint32_t year;
+    uint32_t year = 0;
 } rtc_t;
+
+constexpr uint64_t date_to_ordinal(uint8_t day_of_month, uint8_t month, uint32_t year);
+
+constexpr uint64_t date_to_ordinal(const rtc_t& date);
+
+constexpr uint8_t get_day_of_week(uint8_t day_of_month, uint8_t month, uint32_t year);
+
+constexpr uint8_t get_day_of_week(const rtc_t& date);
 
 enum Alarm : uint8_t {
     ALARM_1 = 0,

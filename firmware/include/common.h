@@ -24,6 +24,10 @@ extern "C" {
 // The size of the nixie tube array of the clock.
 // Even numbers are recommended.
 #define NIXIE_COUNT 8
+// Allow the blinking of the status LED of the OtterPill.
+#define STATUS_LED 1
+#define STATUS_LED_GPIO_PORT GPIOB
+#define STATUS_LED_GPIO_PIN  GPIO_PIN_13
 /* Definition for shift registers */
 // PA1 -> SDI
 #define SDI_PIN         GPIO_PIN_1

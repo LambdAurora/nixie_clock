@@ -9,6 +9,52 @@
 
 #include <rtc.hpp>
 
+constexpr bool is_leap_year(uint32_t year) {
+    return year % 4 == 0 && (year % 100 || year % 400 == 0);
+}
+
+constexpr uint8_t days_in_month(uint8_t month, uint32_t year) {
+    if (month > 12 || month == 0)
+        return 0; // Who would give an invalid month?
+
+    if ((month <= 7 && month % 2) || (month > 7 && !(month % 2)))
+        return 31;
+    else if (month == 2)
+        return is_leap_year(year) ? 29 : 28;
+    else
+        return 30;
+}
+
+constexpr uint16_t days_before_month(uint8_t month, uint32_t year) {
+    uint16_t result = 0;
+    for (uint8_t i = 0; i <= month; i++)
+        result += days_in_month(month, year);
+    return result;
+}
+
+constexpr uint64_t days_before_year(uint32_t year) {
+    auto y = year - 1;
+    return y * 365 + y / 4 - y / 100 + y / 400;
+}
+
+constexpr uint64_t date_to_ordinal(uint8_t day_of_month, uint8_t month, uint32_t year) {
+    return days_before_year(year) + days_before_month(month, year) + day_of_month;
+}
+
+constexpr uint64_t date_to_ordinal(const rtc_t& date) {
+    return date_to_ordinal(date.day_of_month, date.month, date.year);
+}
+
+constexpr uint8_t get_day_of_week(uint8_t day_of_month, uint8_t month, uint32_t year) {
+    // https://cs.uwaterloo.ca/~alopez-o/math-faq/node73.html
+    year -= month < 3;
+    return (day_of_month + (year + year / 4 - year / 100 + year / 400) + "-bed=pen+mad."[month]) % 7;
+}
+
+constexpr uint8_t get_day_of_week(const rtc_t& date) {
+    return get_day_of_week(date.day_of_month, date.month, date.year);
+}
+
 /**
  * Convert normal decimal numbers to binary coded decimal.
  */

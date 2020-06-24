@@ -9,6 +9,8 @@
 
 #include <nixie.hpp>
 
+const auto ASCII_ZERO = static_cast<uint8_t>('0');
+
 bool NixieState::show_number() const {
     return this->_show_number;
 }
@@ -66,7 +68,7 @@ void NixieState::from_string(const std::string& str) {
     for (char c : str) {
         if (std::isdigit(c)) {
             show_number = true;
-            this->number(c - 0x30); // ASCII 0 is 0x30.
+            this->number(c - ASCII_ZERO);
             break;
         }
     }
@@ -78,7 +80,7 @@ void NixieState::from_string(const std::string& str) {
 std::string NixieState::to_string() const {
     std::string str = this->_left_comma ? "." : "";
     if (this->_show_number)
-        str.append(static_cast<size_t>(1), this->_number + 0x30); // ASCII 0 is 0x30.
+        str.append(static_cast<size_t>(1), this->_number + ASCII_ZERO);
     if (this->_right_comma)
         str.append(",");
     return str;
@@ -128,6 +130,12 @@ void NixieArray::from_string(const std::string& str) {
 
 NixieState& NixieArray::at(size_t i) {
     return this->array[i];
+}
+
+void NixieArray::reset() {
+    for (auto& state : this->array) {
+        state.clear();
+    }
 }
 
 void NixieArray::display(bool commas) {

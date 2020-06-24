@@ -46,6 +46,10 @@ namespace console
         return this->operator<<(std::to_string(i));
     }
 
+    outstream& outstream::operator<<(size_t i) {
+        return this->operator<<(std::to_string(i));
+    }
+
     outstream& outstream::operator<<(char ch) {
         this->_buffer += ch;
         return *this;

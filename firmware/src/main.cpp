@@ -8,12 +8,7 @@
  */
 
 #include <main.h>
-#include <rtc.hpp>
-#include <nixie.hpp>
-#include <config.hpp>
-
-#define LED_PIN GPIO_PIN_13
-#define INVERT_STATE(state) (state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET)
+#include <clock_mode.hpp>
 
 #define INIT_OUTPUT_GPIO(PIN, PORT) {\
     HAL_GPIO_WritePin(PORT, PIN, GPIO_PIN_RESET);\
@@ -36,14 +31,14 @@ static void setup_gpio() {
     __HAL_RCC_GPIOA_CLK_ENABLE();
 
     // Let's initialize the blinking LED pin.
-    HAL_GPIO_WritePin(GPIOB, LED_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(STATUS_LED_GPIO_PORT, STATUS_LED_GPIO_PIN, GPIO_PIN_RESET);
 
     // HAL GPIO initialization is a bit long honestly.
-    GPIO_InitStruct.Pin = LED_PIN;
+    GPIO_InitStruct.Pin = STATUS_LED_GPIO_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    HAL_GPIO_Init(STATUS_LED_GPIO_PORT, &GPIO_InitStruct);
 
     // Shift register GPIO.
     INIT_OUTPUT_GPIO(SDI_PIN, SDI_GPIO_PORT)
@@ -77,6 +72,38 @@ int main() {
     console::setup();
 
     auto ds3231 = DS3231(i2c1h);
+    if (ds3231.has_lost_power()) {
+        // If the RTC module lost power, restore the last time and date the firmware knew.
+        // Mmm dd yyyy
+        std::string date_str = __DATE__;
+        // HH:mm:ss
+        std::string time_str = __TIME__;
+
+        const auto ASCII_ZERO = static_cast<uint8_t>('0');
+
+        rtc_t clock;
+        clock.hour = (time_str[0] - ASCII_ZERO) * 10 + (time_str[1] - ASCII_ZERO);
+        clock.minute = (time_str[3] - ASCII_ZERO) * 10 + (time_str[4] - ASCII_ZERO);
+        clock.second = (time_str[6] - ASCII_ZERO) * 10 + (time_str[7] - ASCII_ZERO);
+
+        std::array<std::string, 12> months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+        for (uint8_t i = 0; i < months.size(); i++) {
+            if (date_str.find(months[i]) != std::string::npos)
+                clock.month = i + 1;
+        }
+
+        auto day_of_month_ten = (date_str[4] - ASCII_ZERO) * 10;
+        if (date_str[4] == ' ') day_of_month_ten = 0;
+        clock.day_of_month = day_of_month_ten + (date_str[5] - ASCII_ZERO);
+        clock.year = (date_str[7] - ASCII_ZERO) * 1000
+                + (date_str[8] - ASCII_ZERO) * 100
+                + (date_str[9] - ASCII_ZERO) * 10
+                + (date_str[10] - ASCII_ZERO);
+        clock.day_of_week = get_day_of_week(clock);
+
+        ds3231.set_time(clock);
+    }
+
     auto configuration = Configuration({EE24_ADDRESS, i2c1h});
     if (!configuration.init())
         return 1;
@@ -84,11 +111,18 @@ int main() {
     configuration.reset();
 
     auto nixies = NixieArray();
-    nixies.from_string("4;2;0;0;0;0;0;0");
+    nixies.reset();
 
     ds3231.enable_oscillator();
 
-    rtc_t clock;
+    TimeClockMode time_clock_mode;
+    auto clock = ClockManager(ds3231, configuration, "time", &time_clock_mode);
+
+    while (true) {
+        clock.update();
+    }
+
+    /*rtc_t clock;
     Config config;
 
     ds3231.reset_alarm(ALARM_2);
@@ -109,7 +143,7 @@ int main() {
         nixies.display(false);
 
         HAL_Delay(500);
-    }
+    }*/
 
     return 0;
 }

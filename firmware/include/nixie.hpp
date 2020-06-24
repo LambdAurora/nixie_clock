@@ -139,6 +139,11 @@ public:
         return *this;
     }
 
+    /**
+     * Resets every nixie tube state.
+     */
+    void reset();
+
     [[nodiscard]] constexpr inline size_t size() const {
         return NIXIE_COUNT;
     }
