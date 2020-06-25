@@ -10,12 +10,12 @@
 #ifndef LAMBDA_NIXIE_CLOCK_RTC_HPP
 #define LAMBDA_NIXIE_CLOCK_RTC_HPP
 
-#define DS3231_ADDRESS (0x68 << 1)   ///< I2C address for DS3231.
-#define DS3231_TIME_REGISTER 0x00      ///< Time register
-#define DS3231_ALARM1_REG 0x07    ///< Alarm 1 register
-#define DS3231_ALARM2_REG 0x0B    ///< Alarm 2 register
-#define DS3231_CONTROL_REG 0x0E   ///< Control register
-#define DS3231_STATUS_REG 0x0F ///< Status register
+#define DS3231_ADDRESS (0x68 << 1)  ///< I2C address for DS3231.
+#define DS3231_TIME_REGISTER   0x00 ///< Time register
+#define DS3231_ALARM1_REG      0x07 ///< Alarm 1 register
+#define DS3231_ALARM2_REG      0x0B ///< Alarm 2 register
+#define DS3231_CONTROL_REG     0x0E ///< Control register
+#define DS3231_STATUS_REG      0x0F ///< Status register
 #define DS3231_TEMPERATURE_REG 0x11 ///< Temperature register (high byte - low byte is at 0x12), 10-bit.
 
 #include <common.h>
@@ -81,6 +81,16 @@ constexpr uint64_t date_to_ordinal(uint8_t day_of_month, uint8_t month, uint32_t
 
 constexpr uint64_t date_to_ordinal(const rtc_t& date) {
     return date_to_ordinal(date.day_of_month, date.month, date.year);
+}
+
+constexpr uint64_t get_2000_timestamp(const rtc_t& clock) {
+    auto d = clock.day_of_month - 1;
+    for (size_t i = 1; i < clock.month; i++) {
+        d += days_in_month(i, clock.year);
+    }
+    auto y = clock.year - 2000;
+    d += (365 * y + (y + 3) / 4);
+    return ((d * 24UL + clock.hour) * 60 + clock.minute) * 60 + clock.second;
 }
 
 /**

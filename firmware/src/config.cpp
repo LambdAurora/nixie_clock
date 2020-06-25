@@ -44,7 +44,9 @@ Config Configuration::get_default() {
     // Default values.
     Config config;
     config.h24 = true;
+    config.date_full_year = false;
     config.cathode_poisoning_cycle = CPC_24H;
+    config.date_format = DATE_DMY;
     return config;
 }
 
@@ -62,7 +64,9 @@ bool Configuration::read(Config* config) {
         return false;
 
     config->h24 = options[0] & 0x80;
+    config->date_full_year = options[0] & 0x40;
     config->cathode_poisoning_cycle = static_cast<CathodePoisoningCycle>(options[1]);
+    config->date_format = static_cast<DateFormat>(options[2]);
 
     return true;
 }
@@ -89,7 +93,10 @@ bool Configuration::write(const Config& config) {
 
     if (config.h24)
         options[0] |= 0x80;
+    if (config.date_full_year)
+        options[0] |= 0x40;
     options[1] = config.cathode_poisoning_cycle;
+    options[2] = config.date_format;
 
     return this->eeprom.write(0x05, options, 8);
 }

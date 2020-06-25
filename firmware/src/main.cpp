@@ -116,7 +116,11 @@ int main() {
     ds3231.enable_oscillator();
 
     TimeClockMode time_clock_mode;
+    DateClockMode date_clock_mode;
     auto clock = ClockManager(ds3231, configuration, "time", &time_clock_mode);
+    clock.register_mode("date", &date_clock_mode);
+    // @TODO remove set_current_mode in main.
+    clock.set_current_mode("date");
 
     while (true) {
         clock.update();
