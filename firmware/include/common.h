@@ -28,6 +28,11 @@ extern "C" {
 #define STATUS_LED 1
 #define STATUS_LED_GPIO_PORT GPIOB
 #define STATUS_LED_GPIO_PIN  GPIO_PIN_13
+
+/* Definition for buttons */
+#define BUTTON_MODE_GPIO_PIN  GPIO_PIN_4
+#define BUTTON_MODE_GPIO_PORT GPIOA
+
 /* Definition for shift registers */
 // PA1 -> SDI
 #define SDI_PIN         GPIO_PIN_1

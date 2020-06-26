@@ -19,8 +19,8 @@ enum CathodePoisoningCycle : uint8_t
 {
     CPC_24H = 124,
     CPC_12H = 112,
-    CPC_6H = 160,
-    CPC_HOUR = 110,
+    CPC_6H = 106,
+    CPC_HOUR = 101,
     CPC_30M = 030,
     CPC_5M = 005
 };
@@ -56,6 +56,11 @@ typedef struct
      * The date format used by the clock.
      */
     DateFormat date_format;
+
+    /**
+     * True if the comma of the temperature is on the same nixie tube as the unit digit, else false.
+     */
+    bool compact_temperature;
 } Config;
 
 /**

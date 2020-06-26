@@ -10,6 +10,12 @@
 #include <clock_mode.hpp>
 #include <console.hpp>
 
+/* Time Clock Mode */
+
+std::string TimeClockMode::name() const {
+    return "time";
+}
+
 void TimeClockMode::init(ClockManager& manager) {}
 
 void TimeClockMode::update(ClockManager& manager) {
@@ -57,6 +63,12 @@ void TimeClockMode::update(ClockManager& manager) {
 #endif
 
     manager.nixies.display(false);
+}
+
+/* Date Clock Mode */
+
+std::string DateClockMode::name() const {
+    return "date";
 }
 
 void DateClockMode::init(ClockManager& manager) {
@@ -154,38 +166,80 @@ void DateClockMode::update(ClockManager& manager) {
     manager.nixies.display(true);
 }
 
-uint32_t DateClockMode::timeout() {
+uint32_t DateClockMode::timeout() const {
     return 60;
 }
 
-ClockManager::ClockManager(const DS3231& rtc, const Configuration& config, std::string default_name, ClockMode* default_mode) : _default(std::move(default_name)),
-                                                                                                                                _rtc(rtc), _config_manager(config) {
-    register_mode(this->_default, default_mode);
-    this->reload_config();
-    this->set_current_mode(this->_default);
+/* Thermometer Clock Mode */
+
+std::string ThermometerClockMode::name() const {
+    return "thermometer";
 }
 
-void ClockManager::register_mode(const std::string& name, ClockMode* mode) {
-    this->modes[name] = mode;
+void ThermometerClockMode::init(ClockManager& manager) {}
+
+void ThermometerClockMode::update(ClockManager& manager) {
+    auto compact = manager.config().compact_temperature;
+    auto temp = static_cast<int32_t>(manager.rtc().get_temp() * 100);
+
+    for (size_t i = 4; i > 0; i--) {
+        this->_values[i - 1] = temp % 10;
+        temp /= 10;
+    }
+
+    size_t nixie_index = NIXIE_COUNT - (compact ? 4 : 5);
+    for (size_t i = 0; i < 4; i++) {
+        manager.nixies.at(nixie_index).number(this->_values[i]);
+        if (i == 1) {
+            if (compact)
+                manager.nixies.at(nixie_index).right_comma(true);
+            else {
+                nixie_index++;
+                manager.nixies.at(nixie_index).right_comma(true);
+            }
+        }
+        nixie_index++;
+    }
+
+    manager.nixies.display(true);
+}
+
+uint32_t ThermometerClockMode::timeout() const {
+    return 60;
+}
+
+ClockManager::ClockManager(const DS3231& rtc, const Configuration& config, ClockMode* default_mode) : _rtc(rtc), _config_manager(config) {
+    register_mode(default_mode);
+    this->reload_config();
+    this->set_current_mode(default_mode->name());
+    this->_default = default_mode->name();
+    this->_config.cathode_poisoning_cycle = CPC_5M;
+}
+
+void ClockManager::register_mode(ClockMode* mode) {
+    this->modes.push_back(mode);
 }
 
 ClockMode* ClockManager::get_mode(const std::string& name) {
-    if (!this->modes.count(name))
-        return this->modes[this->_default];
-    return this->modes[name];
+    for (auto mode : this->modes) {
+        if (mode->name() == name)
+            return mode;
+    }
+    return this->modes[0];
 }
 
 bool ClockManager::set_current_mode(const std::string& name) {
-    if (!this->modes.count(name))
-        return false;
-    this->_current_mode = name;
-    auto mode = this->get_mode(name);
-    if (mode == nullptr) // That should not be possible.
-        return false;
-    mode->init(*this);
+    for (size_t i = 0; i < this->modes.size(); i++) {
+        auto mode = this->modes[i];
+        if (mode->name() == name) {
+            this->_current_mode = i;
+            mode->init(*this);
 
-    this->last_interaction = HAL_GetTick();
-    return true;
+            this->last_interaction = HAL_GetTick();
+            return true;
+        }
+    }
+    return false;
 }
 
 void ClockManager::update() {
@@ -202,7 +256,14 @@ void ClockManager::update() {
     }
 #endif
 
-    ClockMode* mode = this->get_mode(this->_current_mode);
+    bool mode_button = HAL_GPIO_ReadPin(BUTTON_MODE_GPIO_PORT, BUTTON_MODE_GPIO_PIN);
+    if (mode_button && mode_button != this->_last_mode_button_value) {
+        this->cycle_mode();
+    }
+
+    ClockMode* mode = this->modes[this->_current_mode];
+
+    bool cathode_poisoning_cycle = false;
 
     if (mode->timeout()) {
         uint32_t current_time = HAL_GetTick();
@@ -212,13 +273,69 @@ void ClockManager::update() {
             this->set_current_mode(this->_default);
             mode = this->get_mode(this->_default);
         }
+    } else {
+        if (this->_config.cathode_poisoning_cycle > 100 && this->_current_clock.minute == 0) {
+            uint8_t cycle_hour = this->_config.cathode_poisoning_cycle - 100;
+            if (!(this->_current_clock.hour % cycle_hour))
+                cathode_poisoning_cycle = true;
+        } else if (!(this->_current_clock.minute % this->_config.cathode_poisoning_cycle))
+            cathode_poisoning_cycle = true;
     }
 
     // Reset to avoid display bugs.
     this->nixies.reset();
-    mode->update(*this);
+    if (!cathode_poisoning_cycle)
+        mode->update(*this);
+    else
+        this->prevent_cathode_poisoning();
 
     this->_last_clock = this->_current_clock;
+    this->_last_mode_button_value = mode_button;
+}
+
+void ClockManager::prevent_cathode_poisoning() {
+    this->nixies.reset();
+
+    for (size_t nixie = 0; nixie < this->nixies.size(); nixie++)
+        this->nixies.at(nixie).left_comma(true);
+    this->nixies.display(true);
+
+    // Delays are bad but in this case we don't want anything to interrupt this.
+    HAL_Delay(500);
+    this->nixies.reset();
+
+    for (uint8_t i = 0; i < 10; i++) {
+        for (size_t nixie = 0; nixie < this->nixies.size(); nixie++)
+            this->nixies.at(nixie).number(i);
+        this->nixies.display(true);
+        HAL_Delay(500);
+    }
+    this->nixies.reset();
+
+    for (size_t nixie = 0; nixie < this->nixies.size(); nixie++)
+        this->nixies.at(nixie).right_comma(true);
+    this->nixies.display(true);
+
+    HAL_Delay(500);
+    this->nixies.reset();
+}
+
+void ClockManager::cycle_mode() {
+    bool found = false;
+    auto current_mode = this->modes[_current_mode];
+    for (auto mode : this->modes) {
+        if (current_mode == mode) {
+            found = true;
+        } else if (found) {
+            this->set_current_mode(mode->name());
+            found = false;
+            break;
+        }
+    }
+
+    if (found) {
+        this->set_current_mode(this->_default);
+    }
 }
 
 DS3231& ClockManager::rtc() {

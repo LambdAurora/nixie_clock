@@ -4,7 +4,7 @@
 PA1  -> SDI
 PA2  -> RCLK
 PA3  -> SRCLK
-PA4  ->
+PA4  -> Mode Button
 PA5  ->
 PA6  ->
 PA7  ->

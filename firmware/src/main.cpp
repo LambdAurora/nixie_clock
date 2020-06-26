@@ -40,6 +40,12 @@ static void setup_gpio() {
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(STATUS_LED_GPIO_PORT, &GPIO_InitStruct);
 
+    // Buttons
+    GPIO_InitStruct.Pin = BUTTON_MODE_GPIO_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    HAL_GPIO_Init(BUTTON_MODE_GPIO_PORT, &GPIO_InitStruct);
+
     // Shift register GPIO.
     INIT_OUTPUT_GPIO(SDI_PIN, SDI_GPIO_PORT)
     INIT_OUTPUT_GPIO(RCLK_PIN, RCLK_GPIO_PORT)
@@ -117,37 +123,14 @@ int main() {
 
     TimeClockMode time_clock_mode;
     DateClockMode date_clock_mode;
-    auto clock = ClockManager(ds3231, configuration, "time", &time_clock_mode);
-    clock.register_mode("date", &date_clock_mode);
-    // @TODO remove set_current_mode in main.
-    clock.set_current_mode("date");
+    ThermometerClockMode thermometer_clock_mode;
+    auto clock = ClockManager(ds3231, configuration, &time_clock_mode);
+    clock.register_mode(&date_clock_mode);
+    clock.register_mode(&thermometer_clock_mode);
 
     while (true) {
         clock.update();
     }
-
-    /*rtc_t clock;
-    Config config;
-
-    ds3231.reset_alarm(ALARM_2);
-
-    GPIO_PinState state = GPIO_PIN_RESET;
-    while (true) {
-        ds3231.get_time(&clock);
-        ds3231.force_temp_conv();
-        float temp = ds3231.get_temp();
-        configuration.read(&config);
-        console::cout.writef("DS3231 ; lost_power = %d ; temp = %d°C\r\n", ds3231.has_lost_power(), static_cast<int>(temp * 100));
-        console::cout.writef("%d:%d:%d %d/%d/%d\r\n", clock.hour, clock.minute, clock.second, clock.day_of_month, clock.month, clock.year);
-        console::cout.writef("H24 %d ; CPC %d\r\n", config.h24, config.cathode_poisoning_cycle);
-
-        state = INVERT_STATE(state);
-        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, state);
-
-        nixies.display(false);
-
-        HAL_Delay(500);
-    }*/
 
     return 0;
 }

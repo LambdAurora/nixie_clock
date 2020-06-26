@@ -47,6 +47,7 @@ Config Configuration::get_default() {
     config.date_full_year = false;
     config.cathode_poisoning_cycle = CPC_24H;
     config.date_format = DATE_DMY;
+    config.compact_temperature = true;
     return config;
 }
 
@@ -65,6 +66,7 @@ bool Configuration::read(Config* config) {
 
     config->h24 = options[0] & 0x80;
     config->date_full_year = options[0] & 0x40;
+    config->compact_temperature = options[0] & 0x20;
     config->cathode_poisoning_cycle = static_cast<CathodePoisoningCycle>(options[1]);
     config->date_format = static_cast<DateFormat>(options[2]);
 
@@ -95,6 +97,8 @@ bool Configuration::write(const Config& config) {
         options[0] |= 0x80;
     if (config.date_full_year)
         options[0] |= 0x40;
+    if (config.compact_temperature)
+        options[0] |= 0x20;
     options[1] = config.cathode_poisoning_cycle;
     options[2] = config.date_format;
 
