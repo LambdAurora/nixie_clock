@@ -129,6 +129,13 @@ public:
     void prevent_cathode_poisoning();
 
     /**
+     * Counts to 100 with nixie tubes.
+     *
+     * If more than 2 nixie tubes are present, the pattern will be repeated.
+     */
+    void count_to_100();
+
+    /**
      * Cycles through the different modes.
      */
     void cycle_mode();

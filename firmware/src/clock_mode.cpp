@@ -10,6 +10,8 @@
 #include <clock_mode.hpp>
 #include <console.hpp>
 
+#define COMMAS false
+
 /* Time Clock Mode */
 
 std::string TimeClockMode::name() const {
@@ -62,7 +64,7 @@ void TimeClockMode::update(ClockManager& manager) {
     }
 #endif
 
-    manager.nixies.display(false);
+    manager.nixies.display(COMMAS);
 }
 
 /* Date Clock Mode */
@@ -94,9 +96,9 @@ void DateClockMode::init(ClockManager& manager) {
             if (full_year) this->_indexes = {4, 5, 6, 7, 10, 2, 3, 10, 0, 1};
             else this->_indexes = {6, 7, 8, 2, 3, 8, 0, 1, 9, 9};
 #elif NIXIE_COUNT == 6
-        this->_indexes = {6, 7, 2, 3, 0, 1, 8, 8, 8, 8};
+            this->_indexes = {6, 7, 2, 3, 0, 1, 8, 8, 8, 8};
 #else
-        this->_indexes = {2, 3, 0, 1, 8, 8, 8, 8, 8, 8};
+            this->_indexes = {2, 3, 0, 1, 8, 8, 8, 8, 8, 8};
 #endif
             break;
         case DATE_MDY:
@@ -163,7 +165,7 @@ void DateClockMode::update(ClockManager& manager) {
         nixie_index++;
     }
 
-    manager.nixies.display(true);
+    manager.nixies.display(COMMAS);
 }
 
 uint32_t DateClockMode::timeout() const {
@@ -201,7 +203,7 @@ void ThermometerClockMode::update(ClockManager& manager) {
         nixie_index++;
     }
 
-    manager.nixies.display(true);
+    manager.nixies.display(COMMAS);
 }
 
 uint32_t ThermometerClockMode::timeout() const {
@@ -213,7 +215,9 @@ ClockManager::ClockManager(const DS3231& rtc, const Configuration& config, Clock
     this->reload_config();
     this->set_current_mode(default_mode->name());
     this->_default = default_mode->name();
-    this->_config.cathode_poisoning_cycle = CPC_5M;
+    this->_config.cathode_poisoning_cycle = CPC_30M;
+
+    this->prevent_cathode_poisoning();
 }
 
 void ClockManager::register_mode(ClockMode* mode) {
@@ -274,19 +278,19 @@ void ClockManager::update() {
             mode = this->get_mode(this->_default);
         }
     } else {
-        if (this->_config.cathode_poisoning_cycle > 100 && this->_current_clock.minute == 0) {
+        if (this->_config.cathode_poisoning_cycle > 100 && this->_current_clock.minute == 0 && this->_current_clock.second < 30) {
             uint8_t cycle_hour = this->_config.cathode_poisoning_cycle - 100;
             if (!(this->_current_clock.hour % cycle_hour))
                 cathode_poisoning_cycle = true;
-        } else if (!(this->_current_clock.minute % this->_config.cathode_poisoning_cycle))
+        } else if (!(this->_current_clock.minute % this->_config.cathode_poisoning_cycle) && this->_current_clock.second < 30)
             cathode_poisoning_cycle = true;
     }
 
     // Reset to avoid display bugs.
     this->nixies.reset();
-    if (!cathode_poisoning_cycle)
+    if (!cathode_poisoning_cycle) {
         mode->update(*this);
-    else
+    } else
         this->prevent_cathode_poisoning();
 
     this->_last_clock = this->_current_clock;
@@ -296,28 +300,44 @@ void ClockManager::update() {
 void ClockManager::prevent_cathode_poisoning() {
     this->nixies.reset();
 
+    uint32_t delay = 500;
+
     for (size_t nixie = 0; nixie < this->nixies.size(); nixie++)
         this->nixies.at(nixie).left_comma(true);
-    this->nixies.display(true);
+    this->nixies.display(COMMAS);
 
     // Delays are bad but in this case we don't want anything to interrupt this.
-    HAL_Delay(500);
+    HAL_Delay(delay);
     this->nixies.reset();
 
     for (uint8_t i = 0; i < 10; i++) {
         for (size_t nixie = 0; nixie < this->nixies.size(); nixie++)
             this->nixies.at(nixie).number(i);
-        this->nixies.display(true);
-        HAL_Delay(500);
+        this->nixies.display(COMMAS);
+        HAL_Delay(delay);
     }
     this->nixies.reset();
 
     for (size_t nixie = 0; nixie < this->nixies.size(); nixie++)
         this->nixies.at(nixie).right_comma(true);
-    this->nixies.display(true);
+    this->nixies.display(COMMAS);
 
-    HAL_Delay(500);
+    HAL_Delay(delay);
     this->nixies.reset();
+}
+
+
+void ClockManager::count_to_100() {
+    for (uint8_t i = 0; i < 100; i++) {
+        this->nixies.reset();
+        uint8_t unit = i % 10;
+        uint8_t ten = i / 10;
+        for (size_t nixie = 0; nixie < this->nixies.size(); nixie++) {
+            this->nixies.at(nixie).number(!(nixie % 2) ? ten : unit);
+        }
+        this->nixies.display(COMMAS);
+        HAL_Delay(50);
+    }
 }
 
 void ClockManager::cycle_mode() {

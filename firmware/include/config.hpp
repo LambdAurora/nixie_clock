@@ -21,7 +21,7 @@ enum CathodePoisoningCycle : uint8_t
     CPC_12H = 112,
     CPC_6H = 106,
     CPC_HOUR = 101,
-    CPC_30M = 030,
+    CPC_30M = 30,
     CPC_5M = 005
 };
 
