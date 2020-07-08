@@ -40,7 +40,19 @@ void TimeClockMode::update(ClockManager& manager) {
     auto separator_on = !(second_unit % 2);
 
     // Straightforward but not very good.
-#if NIXIE_COUNT <= 6
+#if NIXIE_COUNT == 2
+    if (!(second % 2)) {
+        manager.nixies.at(0).number(hour);
+        manager.nixies.at(0).right_comma(separator_on);
+        manager.nixies.at(1).number(hour_unit);
+        manager.nixies.at(1).right_comma(separator_on);
+    } else {
+        manager.nixies.at(0).number(minute);
+        manager.nixies.at(0).left_comma(separator_on);
+        manager.nixies.at(1).number(minute_unit);
+        manager.nixies.at(1).left_comma(separator_on);
+    }
+#elif NIXIE_COUNT <= 6
     manager.nixies.at(0).number(hour);
     manager.nixies.at(1).number(hour_unit);
     manager.nixies.at(2).number(minute);
@@ -83,7 +95,7 @@ void DateClockMode::init(ClockManager& manager) {
 
     // Indexes array for display format from _values array.
     // Out-of-bound special values:
-    // 8: represents a separator if 8 or more nixie tubes are available, else ignored.
+    // 8: represents a separator if 8 or< more nixie tubes are available, else ignored.
     // 9: ignored.
     // 10: ignored if 8 or less nixie tubes are available, else represents a separator.
     switch (date_format) {
@@ -191,6 +203,9 @@ void ThermometerClockMode::update(ClockManager& manager) {
 
     size_t nixie_index = NIXIE_COUNT - (compact ? 4 : 5);
     for (size_t i = 0; i < 4; i++) {
+        if (nixie_index >= NIXIE_COUNT)
+            break;
+
         manager.nixies.at(nixie_index).number(this->_values[i]);
         if (i == 1) {
             if (compact)
