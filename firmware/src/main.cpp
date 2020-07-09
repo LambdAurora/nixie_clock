@@ -127,6 +127,10 @@ int main() {
     auto clock = ClockManager(ds3231, configuration, &time_clock_mode);
     clock.register_mode(&date_clock_mode);
     clock.register_mode(&thermometer_clock_mode);
+#if DEBUG_MODE
+    RandomClockMode random_clock_mode;
+    clock.register_mode(&random_clock_mode);
+#endif
 
     while (true) {
         clock.update();

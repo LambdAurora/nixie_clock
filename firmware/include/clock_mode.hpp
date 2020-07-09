@@ -29,7 +29,7 @@ public:
      * Initializes the mode.
      * @param manager The clock manager.
      */
-    virtual void init(ClockManager& manager) = 0;
+    virtual void init(ClockManager& manager) {};
 
     /**
      * Update method executed at each iteration of the main loop.
@@ -48,10 +48,11 @@ public:
 
 class TimeClockMode : public ClockMode
 {
+private:
+    std::array<uint8_t, 6> _values{0, 0, 0, 0, 0, 0};
+
 public:
     [[nodiscard]] std::string name() const override;
-
-    void init(ClockManager& manager) override;
 
     void update(ClockManager& manager) override;
 };
@@ -81,12 +82,28 @@ private:
 public:
     [[nodiscard]] std::string name() const override;
 
+    void update(ClockManager& manager) override;
+
+    [[nodiscard]] uint32_t timeout() const override;
+};
+
+#if DEBUG_MODE
+class RandomClockMode : public ClockMode
+{
+private:
+    uint8_t _displayed = 0;
+    std::array<uint8_t, NIXIE_COUNT> _values;
+
+public:
+    [[nodiscard]] std::string name() const override;
+
     void init(ClockManager& manager) override;
 
     void update(ClockManager& manager) override;
 
     [[nodiscard]] uint32_t timeout() const override;
 };
+#endif
 
 class ClockManager
 {

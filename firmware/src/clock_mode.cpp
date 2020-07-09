@@ -9,16 +9,17 @@
 
 #include <clock_mode.hpp>
 #include <console.hpp>
+#include <random>
 
-#define COMMAS false
+// Random generator.
+std::default_random_engine generator;
+std::uniform_int_distribution<int> distribution(0, 9);
 
 /* Time Clock Mode */
 
 std::string TimeClockMode::name() const {
     return "time";
 }
-
-void TimeClockMode::init(ClockManager& manager) {}
 
 void TimeClockMode::update(ClockManager& manager) {
     bool h24 = manager.config().h24;
@@ -28,55 +29,54 @@ void TimeClockMode::update(ClockManager& manager) {
     if (!h24 && hour > 12)
         hour -= 12;
 
-    auto hour_unit = hour % 10;
-    hour /= 10;
-    auto minute = manager.current_clock().minute;
-    auto minute_unit = minute % 10;
-    minute /= 10;
-    auto second = manager.current_clock().second;
-    auto second_unit = second % 10;
-    second /= 10;
+    this->_values[1] = hour % 10;
+    this->_values[0] = hour / 10;
+    this->_values[2] = manager.current_clock().minute;
+    this->_values[3] = this->_values[2] % 10;
+    this->_values[2] /= 10;
+    this->_values[4] = manager.current_clock().second;
+    this->_values[5] = this->_values[4] % 10;
+    this->_values[4] /= 10;
 
-    auto separator_on = !(second_unit % 2);
+    auto separator_on = !(this->_values[5] % 2);
 
     // Straightforward but not very good.
+#if NIXIE_COUNT <= 6
+    size_t start = 0;
+    if (this->_values[4] % 2)
+        start = 2;
+    size_t nixie_index = 0;
+    for (size_t i = start; i < 6; i++) {
+        if (nixie_index >= manager.nixies.size())
+            break;
+
+        manager.nixies.at(nixie_index).number(this->_values[i]);
+
 #if NIXIE_COUNT == 2
-    if (!(second % 2)) {
-        manager.nixies.at(0).number(hour);
-        manager.nixies.at(0).right_comma(separator_on);
-        manager.nixies.at(1).number(hour_unit);
-        manager.nixies.at(1).right_comma(separator_on);
-    } else {
-        manager.nixies.at(0).number(minute);
-        manager.nixies.at(0).left_comma(separator_on);
-        manager.nixies.at(1).number(minute_unit);
-        manager.nixies.at(1).left_comma(separator_on);
+        if (start == 0)
+            manager.nixies.at(nixie_index).right_comma(separator_on);
+        else
+            manager.nixies.at(nixie_index).left_comma(separator_on);
+#endif
+
+        nixie_index++;
     }
-#elif NIXIE_COUNT <= 6
-    manager.nixies.at(0).number(hour);
-    manager.nixies.at(1).number(hour_unit);
-    manager.nixies.at(2).number(minute);
-    manager.nixies.at(3).number(minute_unit);
-#  if NIXIE_COUNT == 6
-        manager.nixies.at(4).number(second);
-        manager.nixies.at(5).number(second_unit);
-#  endif
 #else
     // Align to center if there's more than 8 nixie tubes.
     size_t start = NIXIE_COUNT / 2 - 4;
-    manager.nixies.at(start).number(hour);
-    manager.nixies.at(start + 1).number(hour_unit);
-    manager.nixies.at(start + 3).number(minute);
-    manager.nixies.at(start + 4).number(minute_unit);
-    manager.nixies.at(start + 6).number(second);
-    manager.nixies.at(start + 7).number(second_unit);
+    manager.nixies.at(start).number(this->_values[0]);
+    manager.nixies.at(start + 1).number(this->_values[1]);
+    manager.nixies.at(start + 3).number(this->_values[2]);
+    manager.nixies.at(start + 4).number(this->_values[3]);
+    manager.nixies.at(start + 6).number(this->_values[4]);
+    manager.nixies.at(start + 7).number(this->_values[5]);
     for (size_t i = start + 2; i <= start + 5; i += 3) {
         manager.nixies.at(i).left_comma(separator_on);
         manager.nixies.at(i).right_comma(separator_on);
     }
 #endif
 
-    manager.nixies.display(COMMAS);
+    manager.nixies.display(NIXIE_COMMAS);
 }
 
 /* Date Clock Mode */
@@ -177,7 +177,7 @@ void DateClockMode::update(ClockManager& manager) {
         nixie_index++;
     }
 
-    manager.nixies.display(COMMAS);
+    manager.nixies.display(NIXIE_COMMAS);
 }
 
 uint32_t DateClockMode::timeout() const {
@@ -190,8 +190,6 @@ std::string ThermometerClockMode::name() const {
     return "thermometer";
 }
 
-void ThermometerClockMode::init(ClockManager& manager) {}
-
 void ThermometerClockMode::update(ClockManager& manager) {
     auto compact = manager.config().compact_temperature;
     auto temp = static_cast<int32_t>(manager.rtc().get_temp() * 100);
@@ -202,9 +200,14 @@ void ThermometerClockMode::update(ClockManager& manager) {
     }
 
     size_t nixie_index = NIXIE_COUNT - (compact ? 4 : 5);
+    if (manager.nixies.size() == 2)
+        nixie_index = 0;
+
     for (size_t i = 0; i < 4; i++) {
         if (nixie_index >= NIXIE_COUNT)
             break;
+        if (i == 0 && this->_values[i] == 0)
+            continue;
 
         manager.nixies.at(nixie_index).number(this->_values[i]);
         if (i == 1) {
@@ -218,12 +221,46 @@ void ThermometerClockMode::update(ClockManager& manager) {
         nixie_index++;
     }
 
-    manager.nixies.display(COMMAS);
+    manager.nixies.display(NIXIE_COMMAS);
 }
 
 uint32_t ThermometerClockMode::timeout() const {
     return 60;
 }
+
+/* Random Clock Mode */
+// Cool effect, for debugging.
+#if DEBUG_MODE
+std::string RandomClockMode::name() const {
+    return "random";
+}
+
+void RandomClockMode::init(ClockManager &manager) {
+    for (size_t i = 0; i < NIXIE_COUNT; i++) {
+        this->_values[i] = distribution(generator);
+    }
+    this->_displayed = 0;
+}
+
+void RandomClockMode::update(ClockManager &manager) {
+    if (this->_displayed >= 50)
+        init(manager);
+
+    for (size_t i = 0; i < manager.nixies.size(); i++) {
+        manager.nixies.at(i).number(this->_values[i]);
+    }
+
+    manager.nixies.display(NIXIE_COMMAS);
+
+    this->_displayed++;
+}
+
+uint32_t RandomClockMode::timeout() const {
+    return 120;
+}
+#endif
+
+/* Clock Manager */
 
 ClockManager::ClockManager(const DS3231& rtc, const Configuration& config, ClockMode* default_mode) : _rtc(rtc), _config_manager(config) {
     register_mode(default_mode);
@@ -319,7 +356,7 @@ void ClockManager::prevent_cathode_poisoning() {
 
     for (size_t nixie = 0; nixie < this->nixies.size(); nixie++)
         this->nixies.at(nixie).left_comma(true);
-    this->nixies.display(COMMAS);
+    this->nixies.display(NIXIE_COMMAS);
 
     // Delays are bad but in this case we don't want anything to interrupt this.
     HAL_Delay(delay);
@@ -328,14 +365,14 @@ void ClockManager::prevent_cathode_poisoning() {
     for (uint8_t i = 0; i < 10; i++) {
         for (size_t nixie = 0; nixie < this->nixies.size(); nixie++)
             this->nixies.at(nixie).number(i);
-        this->nixies.display(COMMAS);
+        this->nixies.display(NIXIE_COMMAS);
         HAL_Delay(delay);
     }
     this->nixies.reset();
 
     for (size_t nixie = 0; nixie < this->nixies.size(); nixie++)
         this->nixies.at(nixie).right_comma(true);
-    this->nixies.display(COMMAS);
+    this->nixies.display(NIXIE_COMMAS);
 
     HAL_Delay(delay);
     this->nixies.reset();
@@ -350,7 +387,7 @@ void ClockManager::count_to_100() {
         for (size_t nixie = 0; nixie < this->nixies.size(); nixie++) {
             this->nixies.at(nixie).number(!(nixie % 2) ? ten : unit);
         }
-        this->nixies.display(COMMAS);
+        this->nixies.display(NIXIE_COMMAS);
         HAL_Delay(50);
     }
 }

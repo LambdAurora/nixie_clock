@@ -24,6 +24,7 @@ extern "C" {
 // The size of the nixie tube array of the clock.
 // Even numbers are recommended.
 #define NIXIE_COUNT 2
+#define NIXIE_COMMAS false
 // Allow the blinking of the status LED of the OtterPill.
 #define STATUS_LED 1
 #define STATUS_LED_GPIO_PORT GPIOB
@@ -43,6 +44,10 @@ extern "C" {
 // PA3 -> SRCLK
 #define SRCLK_PIN       GPIO_PIN_3
 #define SRCLK_GPIO_PORT GPIOA
+
+#ifndef DEBUG_MODE
+    #define DEBUG_MODE 1
+#endif
 
 /**
  * Setups the system clock.
