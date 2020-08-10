@@ -1,12 +1,12 @@
 G04 #@! TF.GenerationSoftware,KiCad,Pcbnew,5.1.6*
-G04 #@! TF.CreationDate,2020-08-10T12:56:34+02:00*
+G04 #@! TF.CreationDate,2020-08-10T14:59:47+02:00*
 G04 #@! TF.ProjectId,nixie_clock_holder,6e697869-655f-4636-9c6f-636b5f686f6c,rev?*
 G04 #@! TF.SameCoordinates,Original*
 G04 #@! TF.FileFunction,Soldermask,Top*
 G04 #@! TF.FilePolarity,Negative*
 %FSLAX46Y46*%
 G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
-G04 Created by KiCad (PCBNEW 5.1.6) date 2020-08-10 12:56:34*
+G04 Created by KiCad (PCBNEW 5.1.6) date 2020-08-10 14:59:47*
 %MOMM*%
 %LPD*%
 G01*
